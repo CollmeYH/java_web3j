@@ -1,6 +1,6 @@
-package com.example.java_web3j.utlis;
+package com.fingerchar.utils;
 
-import com.example.java_web3j.utlis.contract.EventValuesExt;
+import com.example.java_web3j.pojo.EventValuesExt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.web3j.abi.EventEncoder;
@@ -12,7 +12,6 @@ import org.web3j.abi.datatypes.generated.Uint8;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterNumber;
 import org.web3j.protocol.core.methods.request.EthFilter;
-import org.web3j.protocol.core.methods.response.EthBlock;
 import org.web3j.protocol.core.methods.response.EthBlockNumber;
 import org.web3j.protocol.core.methods.response.EthLog;
 import org.web3j.protocol.core.methods.response.EthLog.LogResult;
@@ -25,14 +24,40 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-/**
- * 查询链上智能合约的Event事件
- */
 public class DappEventUtils {
 
-	private static final Logger logger = LoggerFactory.getLogger(DappEventUtils.class);
+	private static final Logger logger = LoggerFactory.getLogger(com.fingerchar.utils.DappEventUtils.class);
 
-	//设置Event对应的类型
+	public static final Event BUY_EVENT = new Event("Buy", Arrays.asList(new TypeReference<Address>(true) {
+	}, new TypeReference<Uint256>(true) {
+	}, new TypeReference<Uint256>() {
+	}, new TypeReference<Address>() {
+	}, new TypeReference<Address>() {
+	}, new TypeReference<Uint256>() {
+	}, new TypeReference<Uint256>() {
+	}, new TypeReference<Address>() {
+	}, new TypeReference<Uint256>() {
+	}, new TypeReference<Uint256>() {
+	}));
+	public static final Event CANCEL_EVENT = new Event("Cancel", Arrays.asList(new TypeReference<Address>(true) {
+	}, new TypeReference<Uint256>(true) {
+	}, new TypeReference<Address>() {
+	}, new TypeReference<Address>() {
+	}, new TypeReference<Uint256>() {
+	}, new TypeReference<Uint256>() {
+	}));
+
+	public static final Event TRANSFER_EVENT = new Event("Transfer", Arrays.asList(new TypeReference<Address>(true) {
+	}, new TypeReference<Address>(true) {
+	}, new TypeReference<Uint256>(true) {
+	}));
+
+	public static final Event SECONDARYSALEFEES_EVENT = new Event("SecondarySaleFees",
+			Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {
+			}, new TypeReference<DynamicArray<Address>>() {
+			}, new TypeReference<DynamicArray<Uint256>>() {
+			}));;
+
 	public static final Event MARKETITEMCREATED_EVENT = new Event("MarketItemCreated",
 			Arrays.<TypeReference<?>>asList(new TypeReference<Uint>(true) {
 			}, new TypeReference<Address>(true) {
@@ -43,16 +68,25 @@ public class DappEventUtils {
 			}, new TypeReference<Uint8>() {
 			}));
 
+	public static final String TRANSFER_TOPIC = EventEncoder.encode(TRANSFER_EVENT);
+
+	public static final String CANCEL_TOPIC = EventEncoder.encode(CANCEL_EVENT);
+
+	public static final String BUY_TOPIC = EventEncoder.encode(BUY_EVENT);
 
 	public static final String MARKETITEMCREATED_TOPIC = EventEncoder.encode(MARKETITEMCREATED_EVENT);
 
+	public static final String SECONDARYSALEFEES_TOPIC = EventEncoder.encode(SECONDARYSALEFEES_EVENT);
 
 	private static Web3j web3j = null;
 
 	@SuppressWarnings("serial")
 	public static final HashMap<String, Event> eventMap = new HashMap<String, Event>() {
 		{
-			put(MARKETITEMCREATED_TOPIC, MARKETITEMCREATED_EVENT);
+			put(TRANSFER_TOPIC, TRANSFER_EVENT);
+			put(CANCEL_TOPIC, CANCEL_EVENT);
+			put(BUY_TOPIC, BUY_EVENT);
+			put(SECONDARYSALEFEES_TOPIC, SECONDARYSALEFEES_EVENT);
 		}
 	};
 
@@ -79,9 +113,7 @@ public class DappEventUtils {
 		EventValues eventValues = Contract.staticExtractEventParameters(event, logResult.get());
 		BigInteger timestamp;
 		try {
-			String blockHash = logResult.get().getBlockHash();
-			EthBlock block = web3j.ethGetBlockByHash(blockHash, false).send();
-			timestamp = block.getBlock().getTimestamp();
+			timestamp = web3j.ethGetBlockByHash(logResult.get().getBlockHash(), false).send().getBlock().getTimestamp();
 		} catch (IOException e) {
 			throw new RuntimeException("get block timestamp error");
 		}
@@ -159,19 +191,19 @@ public class DappEventUtils {
 			List<LogResult> logs = log.getLogs();
 
 			//这里只想获取这一个log日志，可以添加多个
-//			HashMap<String, Event> eventHashMap = new HashMap<String, Event>() {
-//				{
-//					put(MARKETITEMCREATED_TOPIC, MARKETITEMCREATED_EVENT);
-//				}
-//			};
-//
-//			Map<String, List<EventValuesExt>> map = DappEventUtils.decodeLog(logs, eventHashMap);
-//			for (Map.Entry<String, List<EventValuesExt>> stringListEntry : map.entrySet()) {
-//				List<EventValuesExt> value = stringListEntry.getValue();
-//				for (EventValuesExt eventValuesExt : value) {
-//					System.out.println(eventValuesExt.toString());
-//				}
-//			}
+			HashMap<String, Event> eventHashMap = new HashMap<String, Event>() {
+				{
+					put(MARKETITEMCREATED_TOPIC, MARKETITEMCREATED_EVENT);
+				}
+			};
+
+			Map<String, List<EventValuesExt>> map = DappEventUtils.decodeLog(logs, eventHashMap);
+			for (Map.Entry<String, List<EventValuesExt>> stringListEntry : map.entrySet()) {
+				List<EventValuesExt> value = stringListEntry.getValue();
+				for (EventValuesExt eventValuesExt : value) {
+					System.out.println(eventValuesExt.toString());
+				}
+			}
 
 			//核心方法就是这个 解析
 			EventValues eventValues = Contract.staticExtractEventParameters(MARKETITEMCREATED_EVENT, (Log) logs.get(0).get());

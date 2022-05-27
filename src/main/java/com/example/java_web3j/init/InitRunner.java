@@ -13,7 +13,8 @@ public class InitRunner implements CommandLineRunner {
 	
 	private static final Logger logger = LoggerFactory.getLogger(InitRunner.class);
 
-	private final static String CHAIN_API_URL = "https://rinkeby-light.eth.linkpool.io/";
+	private final static String CHAIN_API_URL = "https://data-seed-prebsc-1-s1.binance.org:8545/";
+//	private final static String CHAIN_API_URL = "https ://main-light.eth.linkpool.io/";
 
 	
 	@Override
